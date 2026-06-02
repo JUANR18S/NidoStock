@@ -19,31 +19,73 @@ export const Dashboard = () => {
   const [loadingCats, setLoadingCats] = useState(true)
   const [dbError, setDbError] = useState(false)
 
+  // Métricas dinámicas del inventario
+  const [productsCount, setProductsCount] = useState(0)
+  const [activeBatchesCount, setActiveBatchesCount] = useState(0)
+  const [expiringBatchesCount, setExpiringBatchesCount] = useState(0)
+  const [loadingMetrics, setLoadingMetrics] = useState(true)
+
   useEffect(() => {
-    const loadCategories = async () => {
+    const loadDashboardData = async () => {
       try {
         setLoadingCats(true)
-        const { data, error } = await supabase
+        setLoadingMetrics(true)
+        setDbError(false)
+
+        // 1. Obtener categorías
+        const { data: catData, error: catError } = await supabase
           .from('product_categories')
           .select('*')
           .order('name', { ascending: true })
 
-        if (error) {
-          console.error(error)
-          setDbError(true)
-        } else {
-          setCategories(data || [])
-          setDbError(false)
-        }
+        if (catError) throw catError
+        setCategories(catData || [])
+
+        // 2. Obtener total de productos
+        const { count: prodCount, error: prodError } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+
+        if (prodError) throw prodError
+        setProductsCount(prodCount || 0)
+
+        // 3. Obtener lotes activos (current_quantity > 0)
+        const { count: batchCount, error: batchError } = await supabase
+          .from('product_batches')
+          .select('*', { count: 'exact', head: true })
+          .gt('current_quantity', 0)
+
+        if (batchError) throw batchError
+        setActiveBatchesCount(batchCount || 0)
+
+        // 4. Obtener lotes por vencer en los próximos 90 días
+        const today = new Date()
+        const targetDate = new Date()
+        targetDate.setDate(today.getDate() + 90)
+
+        const formattedToday = today.toISOString().split('T')[0]
+        const formattedTarget = targetDate.toISOString().split('T')[0]
+
+        const { count: expCount, error: expError } = await supabase
+          .from('product_batches')
+          .select('*', { count: 'exact', head: true })
+          .gt('current_quantity', 0)
+          .gte('expiration_date', formattedToday)
+          .lte('expiration_date', formattedTarget)
+
+        if (expError) throw expError
+        setExpiringBatchesCount(expCount || 0)
+
       } catch (err) {
-        console.error(err)
+        console.error('Error al cargar datos del Dashboard:', err)
         setDbError(true)
       } finally {
         setLoadingCats(false)
+        setLoadingMetrics(false)
       }
     }
 
-    loadCategories()
+    loadDashboardData()
   }, [])
 
   return (
@@ -80,7 +122,11 @@ export const Dashboard = () => {
               </div>
               <div>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Productos</span>
-                <span className="text-2xl font-bold text-slate-800">42</span>
+                {loadingMetrics ? (
+                  <div className="h-7 w-12 bg-slate-100 animate-pulse rounded mt-1"></div>
+                ) : (
+                  <span className="text-2xl font-bold text-slate-800">{productsCount}</span>
+                )}
               </div>
             </div>
 
@@ -90,7 +136,11 @@ export const Dashboard = () => {
               </div>
               <div>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Lotes Activos</span>
-                <span className="text-2xl font-bold text-slate-800">18</span>
+                {loadingMetrics ? (
+                  <div className="h-7 w-12 bg-slate-100 animate-pulse rounded mt-1"></div>
+                ) : (
+                  <span className="text-2xl font-bold text-slate-800">{activeBatchesCount}</span>
+                )}
               </div>
             </div>
 
@@ -101,6 +151,7 @@ export const Dashboard = () => {
               <div>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Ventas (Mes)</span>
                 <span className="text-2xl font-bold text-slate-800">$1,240.00</span>
+                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">TODO: Sprint 3</span>
               </div>
             </div>
 
@@ -123,7 +174,8 @@ export const Dashboard = () => {
               </div>
               <div>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Mis Ventas de Hoy</span>
-                <span className="text-2xl font-bold text-slate-800">$340.00 (4 Transacciones)</span>
+                <span className="text-2xl font-bold text-slate-800">$340.00</span>
+                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">TODO: Ventas en Sprint 3</span>
               </div>
             </div>
 
@@ -133,7 +185,11 @@ export const Dashboard = () => {
               </div>
               <div>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Lotes por Vencer</span>
-                <span className="text-2xl font-bold text-slate-800">3 Lotes</span>
+                {loadingMetrics ? (
+                  <div className="h-7 w-12 bg-slate-100 animate-pulse rounded mt-1"></div>
+                ) : (
+                  <span className="text-2xl font-bold text-slate-800">{expiringBatchesCount} Lotes</span>
+                )}
               </div>
             </div>
 
@@ -144,6 +200,7 @@ export const Dashboard = () => {
               <div>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Clientes</span>
                 <span className="text-2xl font-bold text-slate-800">12</span>
+                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">TODO: Clientes en Sprint 3</span>
               </div>
             </div>
           </>

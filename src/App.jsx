@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { Login } from './pages/Login'
 import { Navbar } from './components/Navbar'
 import { Dashboard } from './pages/Dashboard'
+import { Products } from './pages/Products'
 
 function App() {
   return (
@@ -20,6 +21,19 @@ function App() {
                   <Navbar />
                   <main className="flex-grow">
                     <Dashboard />
+                  </main>
+                </div>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/productos" 
+            element={
+              <ProtectedRoute>
+                <div className="min-h-screen flex flex-col bg-slate-50">
+                  <Navbar />
+                  <main className="flex-grow">
+                    <Products />
                   </main>
                 </div>
               </ProtectedRoute>
