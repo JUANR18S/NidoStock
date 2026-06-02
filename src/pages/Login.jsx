@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabaseClient'
 import { Sparkles, Eye, EyeOff, Lock, Mail } from 'lucide-react'
 
 export const Login = () => {
@@ -8,6 +9,7 @@ export const Login = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
   const navigate = useNavigate()
@@ -15,6 +17,7 @@ export const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccessMessage('')
     setLoading(true)
 
     try {
@@ -27,6 +30,32 @@ export const Login = () => {
           ? 'Credenciales inválidas. Por favor verifica tu correo y contraseña.'
           : 'Ocurrió un error al iniciar sesión. Inténtalo de nuevo.'
       )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    setError('')
+    setSuccessMessage('')
+
+    if (!email.trim()) {
+      setError('Por favor, ingresa tu correo electrónico primero para poder restablecer la contraseña.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`
+      })
+
+      if (resetError) throw resetError
+
+      setSuccessMessage('¡Se ha enviado un enlace de recuperación a tu correo electrónico!')
+    } catch (err) {
+      console.error(err)
+      setError('Error al enviar el enlace de recuperación: ' + (err.message || 'Inténtalo de nuevo.'))
     } finally {
       setLoading(false)
     }
@@ -60,6 +89,13 @@ export const Login = () => {
           </div>
         )}
 
+        {/* Alerta de Éxito */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm rounded-2xl flex items-center animate-fade-in">
+            <span className="font-medium">{successMessage}</span>
+          </div>
+        )}
+
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -82,9 +118,19 @@ export const Login = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
-              Contraseña
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                Contraseña
+              </label>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={loading}
+                className="text-[11px] font-bold text-brand-600 hover:text-brand-700 hover:underline transition-colors focus:outline-none"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
                 <Lock className="w-5 h-5" />
