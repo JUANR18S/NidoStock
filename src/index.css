@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #faf6f6;
+  --color-brand-100: #f3ecec;
+  --color-brand-200: #e7d8d8;
+  --color-brand-300: #d5bebe;
+  --color-brand-400: #bd9d9d;
+  --color-brand-500: #a37c7c;
+  --color-brand-600: #886060;
+  --color-brand-700: #724f4f;
+  --color-brand-800: #5e4242;
+  --color-brand-900: #4f3939;
+  --color-brand-950: #2a1d1d;
+
+  --color-gold-50: #fbf8ee;
+  --color-gold-100: #f5eecf;
+  --color-gold-200: #ecdd9e;
+  --color-gold-300: #dfc463;
+  --color-gold-400: #d3aa37;
+  --color-gold-500: #b88d28;
+  --color-gold-600: #9b7020;
+  --color-gold-700: #7d541c;
+  --color-gold-800: #64431a;
+  --color-gold-900: #523719;
+  --color-gold-950: #2f1e0c;
+
+  --font-sans: 'Outfit', 'Inter', sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-brand-200 selection:text-brand-900;
+  }
+}
+
+/* Custom scrollbars for a premium look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
