@@ -18,8 +18,15 @@
 
 CREATE OR REPLACE FUNCTION public.get_my_role()
 RETURNS text AS $$
-  SELECT role FROM public.profiles WHERE id = auth.uid();
+  SELECT COALESCE(
+    (SELECT role FROM public.profiles WHERE id = auth.uid()),
+    ''
+  );
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
+-- Nota: COALESCE garantiza que si auth.uid() es NULL o el perfil no existe,
+-- la función devuelve '' en lugar de NULL. Esto asegura que todas las
+-- comparaciones de políticas (= 'admin') fallen de forma explícita (false)
+-- en lugar de devolver NULL indefinido.
 
 
 -- =====================================================================
@@ -54,7 +61,10 @@ CREATE POLICY "profiles_insert_admin_only"
 
 -- UPDATE: cada usuario puede actualizar SU PROPIO perfil,
 -- pero el campo role queda bloqueado: el WITH CHECK garantiza que el
--- nuevo valor de role sea idéntico al valor actual almacenado.
+-- nuevo valor de role sea idéntico al valor actualmente almacenado en BD.
+-- Nota: en RLS WITH CHECK no está disponible OLD.role directamente;
+-- get_my_role() es el patrón estándar de Supabase para leer el valor
+-- actual (OLD) del rol antes de que el UPDATE sea confirmado.
 CREATE POLICY "profiles_update_own_no_role_change"
     ON public.profiles FOR UPDATE
     TO authenticated
@@ -177,9 +187,9 @@ SELECT
     p.active,
     p.created_at,
     p.updated_at,
-    COALESCE(SUM(CASE WHEN b.active THEN b.current_quantity ELSE 0 END), 0)::integer AS total_stock,
+    COALESCE(SUM(CASE WHEN b.active = true THEN b.current_quantity ELSE 0 END), 0)::integer AS total_stock,
     MIN(
-        CASE WHEN b.active AND b.current_quantity > 0
+        CASE WHEN b.active = true AND b.current_quantity > 0
              THEN b.expiration_date
              ELSE NULL
         END
