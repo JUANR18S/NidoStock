@@ -80,6 +80,25 @@ export const getCategories = async () => {
 }
 
 /**
+ * Desactiva un lote (borrado lógico).
+ * @param {string} id - UUID del lote
+ */
+export const deactivateBatch = async (id) => {
+  const { data, error } = await supabase
+    .from('product_batches')
+    .update({ active: false })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error en deactivateBatch:', error.message)
+    throw error
+  }
+  return data
+}
+
+/**
  * Registra la entrada de un nuevo lote para un producto.
  * @param {Object} batch - Objeto con product_id, batch_code, expiration_date, initial_quantity, current_quantity, purchase_price
  */

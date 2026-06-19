@@ -317,7 +317,7 @@ export const Products = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-slate-700">
-                      ${product.sale_price.toFixed(2)}
+                      ${parseFloat(product.sale_price).toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
