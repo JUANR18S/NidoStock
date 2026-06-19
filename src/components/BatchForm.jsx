@@ -135,7 +135,11 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
       onSuccess()
     } catch (err) {
       console.error(err)
-      setError(err.message || 'Error al registrar el lote. Inténtalo de nuevo.')
+      if (err.code === '23505') {
+        setError('Ya existe un lote con ese código para este producto. Usa un código de lote diferente.')
+      } else {
+        setError(err.message || 'Error al registrar el lote. Inténtalo de nuevo.')
+      }
     } finally {
       setSubmitting(false)
     }
