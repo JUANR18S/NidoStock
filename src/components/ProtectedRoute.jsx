@@ -1,4 +1,3 @@
-import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -9,12 +8,18 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
     return null; // El AuthProvider ya maneja el spinner general
   }
 
+  // 1. Validar que exista usuario
   if (!user) {
     return <Navigate to="/login" replace />
   }
 
+  // 2. Evitar acceso parcial de usuarios autenticados sin perfil (rol nulo/indefinido)
+  if (!role) {
+    return <Navigate to="/login" replace />
+  }
+
+  // 3. Validar rol cuando la ruta lo requiera
   if (allowedRoles && !allowedRoles.includes(role)) {
-    // Redirigir a la raíz si no tiene el rol necesario
     return <Navigate to="/" replace />
   }
 

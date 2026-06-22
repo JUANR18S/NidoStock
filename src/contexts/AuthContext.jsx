@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext({
@@ -8,6 +8,7 @@ const AuthContext = createContext({
   loading: true,
   signIn: async () => {},
   signOut: async () => {},
+  signUp: async () => {},
 })
 
 export const AuthProvider = ({ children }) => {
@@ -88,6 +89,20 @@ export const AuthProvider = ({ children }) => {
     return data
   }
 
+  const signUp = async (email, password, fullName) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    })
+    if (error) throw error
+    return data
+  }
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
@@ -100,6 +115,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     signIn,
     signOut,
+    signUp,
   }
 
   return (
@@ -119,4 +135,5 @@ export const AuthProvider = ({ children }) => {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { getProducts, deactivateProduct } from '../services/productService'
 import { ProductForm } from '../components/ProductForm'
@@ -11,17 +11,12 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   XCircle, 
-  Eye, 
-  Filter,
-  DollarSign,
-  Layers,
-  ArrowRight
+  Filter
 } from 'lucide-react'
 
 export const Products = () => {
   const { role } = useAuth()
   const [products, setProducts] = useState([])
-  const [filteredProducts, setFilteredProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -38,7 +33,6 @@ export const Products = () => {
       setError('')
       const data = await getProducts()
       setProducts(data)
-      setFilteredProducts(data)
     } catch (err) {
       console.error(err)
       setError('Error al obtener el inventario de productos de Supabase.')
@@ -48,31 +42,36 @@ export const Products = () => {
   }
 
   useEffect(() => {
-    loadData()
+    let active = true
+    const init = async () => {
+      await Promise.resolve()
+      if (!active) return
+      loadData()
+    }
+    init()
+    return () => { active = false }
   }, [])
 
-  // Búsqueda y Filtrado
-  useEffect(() => {
-    let result = products
-
+  // Calcular productos filtrados en tiempo de renderizado
+  const filteredProducts = products.filter(p => {
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase()
-      result = result.filter(
-        p => 
-          p.name.toLowerCase().includes(term) || 
-          p.sku.toLowerCase().includes(term) ||
-          (p.category_name && p.category_name.toLowerCase().includes(term))
-      )
+      const matches = 
+        p.name.toLowerCase().includes(term) || 
+        p.sku.toLowerCase().includes(term) ||
+        (p.category_name && p.category_name.toLowerCase().includes(term))
+      
+      if (!matches) return false
     }
 
     if (filterActive === 'active') {
-      result = result.filter(p => p.active)
+      return p.active
     } else if (filterActive === 'inactive') {
-      result = result.filter(p => !p.active)
+      return !p.active
     }
 
-    setFilteredProducts(result)
-  }, [searchTerm, filterActive, products])
+    return true
+  })
 
   const handleDeactivate = async (id) => {
     if (!window.confirm('¿Estás seguro de que deseas desactivar este producto?')) return
@@ -317,7 +316,7 @@ export const Products = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-slate-700">
-                      ${product.sale_price.toFixed(2)}
+                      ${Number(product.sale_price || 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">

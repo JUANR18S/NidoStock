@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { createProduct, getCategories } from '../services/productService'
 import { X, Tag, Package, DollarSign, FileText, AlertTriangle } from 'lucide-react'

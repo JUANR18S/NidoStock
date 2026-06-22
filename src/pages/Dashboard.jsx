@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { 
@@ -102,7 +102,7 @@ export const Dashboard = () => {
             ¡Hola, {user?.email?.split('@')[0]}!
           </h2>
           <p className="text-brand-100/80 text-sm mt-1 max-w-xl">
-            Bienvenido al panel de control de Stock Cosmetológico. Tienes permisos de{' '}
+            Bienvenido al panel de control de NidoStock. Tienes permisos de{' '}
             <strong className="text-white underline decoration-gold-300">
               {role === 'admin' ? 'Administrador completo' : 'Empleado de punto de venta'}
             </strong>.

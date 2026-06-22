@@ -1,6 +1,6 @@
 -- ==========================================
 -- ESTRUCTURA DE BASE DE DATOS - SPRINT 1
--- STOCK COSMETOLÓGICO
+-- NIDOSTOCK
 -- ==========================================
 
 -- Habilitar extensión UUID
@@ -17,6 +17,17 @@ create table if not exists public.profiles (
 -- Habilitar RLS en profiles
 alter table public.profiles enable row level security;
 
+-- Función auxiliar para verificar rol de administrador de forma segura (evita recursión RLS)
+create or replace function public.is_admin(user_id uuid)
+returns boolean as $$
+begin
+    return exists (
+        select 1 from public.profiles
+        where id = user_id and role = 'admin'
+    );
+end;
+$$ language plpgsql security definer;
+
 -- Políticas de RLS para profiles
 create policy "Cualquier usuario autenticado puede leer perfiles"
     on public.profiles for select
@@ -32,12 +43,27 @@ create policy "Los usuarios pueden actualizar su propio perfil (excepto rol)"
 create policy "Solo administradores pueden modificar perfiles completamente"
     on public.profiles for all
     to authenticated
-    using (
-        exists (
-            select 1 from public.profiles
-            where id = auth.uid() and role = 'admin'
-        )
-    );
+    using (public.is_admin(auth.uid()));
+
+-- Función de validación para evitar que usuarios no-administradores cambien el rol
+create or replace function public.check_profile_role_update()
+returns trigger as $$
+begin
+    if new.role <> old.role then
+        if not public.is_admin(auth.uid()) then
+            raise exception 'No tienes permisos para modificar el rol de usuario.';
+        end if;
+    end if;
+    return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger para validar cambios de rol en actualizaciones de perfiles
+drop trigger if exists on_profile_role_update on public.profiles;
+create trigger on_profile_role_update
+    before update on public.profiles
+    for each row execute procedure public.check_profile_role_update();
+
 
 -- 2. TABLA: product_categories
 create table if not exists public.product_categories (

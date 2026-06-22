@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { Sparkles, Eye, EyeOff, Lock, Mail } from 'lucide-react'
@@ -75,7 +75,7 @@ export const Login = () => {
             <Sparkles className="w-7 h-7" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-800 font-sans">
-            Stock Cosmetológico
+            NidoStock
           </h1>
           <p className="text-sm text-slate-500 mt-2 font-medium">
             Accede al sistema de inventario y punto de venta
@@ -170,6 +170,15 @@ export const Login = () => {
               'Ingresar al Sistema'
             )}
           </button>
+          
+          <div className="text-center mt-4">
+            <p className="text-xs text-slate-400 font-semibold">
+              ¿No tienes cuenta?{' '}
+              <Link to="/register" className="text-brand-600 hover:text-brand-700 hover:underline font-bold transition-colors">
+                Crear cuenta
+              </Link>
+            </p>
+          </div>
         </form>
 
         {/* Indicaciones para pruebas */}

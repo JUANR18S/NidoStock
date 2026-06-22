@@ -1,7 +1,6 @@
-import React from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Sparkles, User, ShieldAlert } from 'lucide-react'
+import { LogOut, Sparkles, User } from 'lucide-react'
 
 export const Navbar = () => {
   const { user, role, signOut } = useAuth()
@@ -26,7 +25,7 @@ export const Navbar = () => {
             </div>
             <div className="text-left">
               <span className="font-bold text-lg text-slate-800 tracking-tight block leading-none">
-                Stock Cosmetológico
+                NidoStock
               </span>
               <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
                 Control de Inventario
@@ -59,6 +58,20 @@ export const Navbar = () => {
             >
               Productos
             </NavLink>
+            {role === 'admin' && (
+              <NavLink
+                to="/usuarios"
+                className={({ isActive }) => 
+                  `text-xs font-bold uppercase tracking-wider px-3.5 py-2.5 rounded-2xl transition-all duration-200 ${
+                    isActive 
+                      ? 'bg-brand-50 text-brand-700 border border-brand-100/50' 
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50 border border-transparent'
+                  }`
+                }
+              >
+                Usuarios
+              </NavLink>
+            )}
           </div>
         </div>
 

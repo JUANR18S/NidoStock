@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { createBatch, getProducts } from '../services/productService'
 import { X, Calendar, Layers, Clipboard, AlertTriangle } from 'lucide-react'
@@ -65,7 +65,6 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
     // Si cambia el initial_quantity y el current_quantity está vacío o coincide con el anterior, actualizarlo automáticamente
     if (name === 'initial_quantity') {
       setFormData(prev => {
-        const parsedVal = parseInt(value, 10)
         const updatedCurrent = (prev.current_quantity === '' || prev.current_quantity === prev.initial_quantity) 
           ? value 
           : prev.current_quantity
@@ -98,6 +97,14 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
     }
     if (!formData.expiration_date) {
       setError('La fecha de vencimiento es obligatoria.')
+      return
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const expirationTime = new Date(formData.expiration_date + 'T00:00:00').getTime()
+    if (expirationTime < today.getTime()) {
+      setError('La fecha de vencimiento no puede ser anterior a hoy.')
       return
     }
 
