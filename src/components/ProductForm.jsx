@@ -12,7 +12,10 @@ export const ProductForm = ({ onClose, onSuccess }) => {
     category_id: '',
     sku: '',
     sale_price: '',
-    active: true
+    active: true,
+    base_unit: 'unidad',
+    presentation_unit: 'unidad',
+    conversion_factor: 1
   })
   const [loadingCats, setLoadingCats] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -91,11 +94,18 @@ export const ProductForm = ({ onClose, onSuccess }) => {
       return
     }
 
+    const factor = parseInt(formData.conversion_factor)
+    if (isNaN(factor) || factor < 1) {
+      setError('El factor de conversión debe ser un número entero mayor o igual a 1.')
+      return
+    }
+
     try {
       setSubmitting(true)
       await createProduct({
         ...formData,
-        sale_price: price
+        sale_price: price,
+        conversion_factor: factor
       })
       onSuccess()
     } catch (err) {
@@ -232,6 +242,53 @@ export const ProductForm = ({ onClose, onSuccess }) => {
                   ))
                 )}
               </select>
+            </div>
+          </div>
+
+          {/* Unidades de Medida */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Unidad Base *
+              </label>
+              <input
+                type="text"
+                name="base_unit"
+                required
+                value={formData.base_unit}
+                onChange={handleChange}
+                placeholder="ej. unidad"
+                className="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl outline-none focus:border-brand-500 transition-all text-xs font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Presentación Comercial *
+              </label>
+              <input
+                type="text"
+                name="presentation_unit"
+                required
+                value={formData.presentation_unit}
+                onChange={handleChange}
+                placeholder="ej. caja"
+                className="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl outline-none focus:border-brand-500 transition-all text-xs font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Factor Conversión *
+              </label>
+              <input
+                type="number"
+                name="conversion_factor"
+                required
+                min="1"
+                value={formData.conversion_factor}
+                onChange={handleChange}
+                placeholder="ej. 50"
+                className="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl outline-none focus:border-brand-500 transition-all text-xs font-medium"
+              />
             </div>
           </div>
 

@@ -29,17 +29,20 @@ end;
 $$ language plpgsql security definer;
 
 -- Políticas de RLS para profiles
+drop policy if exists "Cualquier usuario autenticado puede leer perfiles" on public.profiles;
 create policy "Cualquier usuario autenticado puede leer perfiles"
     on public.profiles for select
     to authenticated
     using (true);
 
+drop policy if exists "Los usuarios pueden actualizar su propio perfil (excepto rol)" on public.profiles;
 create policy "Los usuarios pueden actualizar su propio perfil (excepto rol)"
     on public.profiles for update
     to authenticated
     using (auth.uid() = id)
     with check (auth.uid() = id);
 
+drop policy if exists "Solo administradores pueden modificar perfiles completamente" on public.profiles;
 create policy "Solo administradores pueden modificar perfiles completamente"
     on public.profiles for all
     to authenticated
@@ -76,11 +79,13 @@ create table if not exists public.product_categories (
 alter table public.product_categories enable row level security;
 
 -- Políticas de RLS para product_categories
+drop policy if exists "Cualquier usuario autenticado puede leer categorías" on public.product_categories;
 create policy "Cualquier usuario autenticado puede leer categorías"
     on public.product_categories for select
     to authenticated
     using (true);
 
+drop policy if exists "Solo administradores pueden gestionar categorías" on public.product_categories;
 create policy "Solo administradores pueden gestionar categorías"
     on public.product_categories for all
     to authenticated

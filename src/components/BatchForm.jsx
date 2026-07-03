@@ -59,6 +59,8 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
     )
   }
 
+  const selectedProduct = products.find(p => p.id === formData.product_id)
+
   const handleChange = (e) => {
     const { name, value } = e.target
     
@@ -304,6 +306,29 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
               />
             </div>
           </div>
+
+          {/* Equivalencia de Unidades en Lotes */}
+          {selectedProduct && selectedProduct.conversion_factor > 1 && (
+            <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl text-[11px] text-amber-800 font-medium leading-relaxed animate-fade-in">
+              <span className="font-bold block text-xs mb-1">Equivalencia de Inventario</span>
+              <p>
+                Este producto se maneja con factor de conversión:{' '}
+                <strong>1 {selectedProduct.presentation_unit} = {selectedProduct.conversion_factor} {selectedProduct.base_unit}s</strong>.
+              </p>
+              <p className="mt-1">
+                La cantidad inicial equivale a:{' '}
+                <strong>
+                  {Math.floor((parseInt(formData.initial_quantity, 10) || 0) / selectedProduct.conversion_factor)}{' '}
+                  {selectedProduct.presentation_unit}s
+                </strong>
+                {' '}y{' '}
+                <strong>
+                  {(parseInt(formData.initial_quantity, 10) || 0) % selectedProduct.conversion_factor}{' '}
+                  {selectedProduct.base_unit}s sueltas
+                </strong>.
+              </p>
+            </div>
+          )}
 
           {/* Botones de acción */}
           <div className="flex space-x-3 pt-4 border-t border-slate-100">

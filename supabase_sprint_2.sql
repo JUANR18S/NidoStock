@@ -12,6 +12,9 @@ create table if not exists public.products (
     sku text unique not null,
     sale_price numeric(10, 2) not null check (sale_price >= 0),
     active boolean not null default true,
+    base_unit text not null default 'unidad',
+    presentation_unit text not null default 'unidad',
+    conversion_factor integer not null default 1 check (conversion_factor >= 1),
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now()
 );
@@ -86,7 +89,8 @@ create table if not exists public.product_batches (
     current_quantity integer not null check (current_quantity >= 0),
     purchase_price numeric(10, 2) not null check (purchase_price >= 0),
     created_at timestamp with time zone default now(),
-    constraint check_quantities check (current_quantity <= initial_quantity)
+    constraint check_quantities check (current_quantity <= initial_quantity),
+    constraint unique_product_batch unique (product_id, batch_code)
 );
 
 -- Habilitar RLS en product_batches
@@ -147,6 +151,9 @@ select
     p.sku,
     p.sale_price,
     p.active,
+    p.base_unit,
+    p.presentation_unit,
+    p.conversion_factor,
     p.created_at,
     p.updated_at,
     coalesce(sum(b.current_quantity), 0)::integer as total_stock,
@@ -154,7 +161,7 @@ select
 from public.products p
 left join public.product_categories c on p.category_id = c.id
 left join public.product_batches b on p.id = b.product_id
-group by p.id, c.name;
+group by p.id, c.name, p.base_unit, p.presentation_unit, p.conversion_factor;
 
 
 -- 4. SEMILLA DE DATOS (OPCIONAL - PARA PRUEBAS)
@@ -203,3 +210,54 @@ begin
         end if;
     end if;
 end $$;
+
+-- 5. TABLA DE MOVIMIENTOS DE STOCK (KARDEX)
+create table if not exists public.stock_movements (
+    id uuid primary key default gen_random_uuid(),
+    batch_id uuid not null references public.product_batches(id) on delete cascade,
+    user_id uuid not null references auth.users(id) on delete restrict,
+    type text not null check (type in ('input', 'output', 'adjustment_in', 'adjustment_out')),
+    quantity integer not null check (quantity > 0),
+    description text,
+    created_at timestamp with time zone default now()
+);
+
+-- Habilitar RLS en stock_movements
+alter table public.stock_movements enable row level security;
+
+-- Políticas de RLS para stock_movements
+create policy "Cualquier usuario autenticado puede leer movimientos de stock"
+    on public.stock_movements for select
+    to authenticated
+    using (true);
+
+create policy "Los usuarios autenticados pueden registrar movimientos con su propio ID"
+    on public.stock_movements for insert
+    to authenticated
+    with check (auth.uid() = user_id);
+
+-- Función y trigger para actualizar el stock en lotes
+create or replace function public.update_batch_stock_on_movement()
+returns trigger as $$
+begin
+    if new.type in ('input', 'adjustment_in') then
+        update public.product_batches
+        set current_quantity = current_quantity + new.quantity
+        where id = new.batch_id;
+    elsif new.type in ('output', 'adjustment_out') then
+        if (select current_quantity from public.product_batches where id = new.batch_id) < new.quantity then
+            raise exception 'Stock insuficiente en el lote especificado.';
+        end if;
+
+        update public.product_batches
+        set current_quantity = current_quantity - new.quantity
+        where id = new.batch_id;
+    end if;
+    return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_stock_movement_inserted on public.stock_movements;
+create trigger on_stock_movement_inserted
+    after insert on public.stock_movements
+    for each row execute procedure public.update_batch_stock_on_movement();

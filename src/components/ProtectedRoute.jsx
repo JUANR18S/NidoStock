@@ -9,7 +9,7 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   // 1. Validar que exista usuario
-  if (!user) {
+  if (!user || !role) {
     return <Navigate to="/login" replace />
   }
 

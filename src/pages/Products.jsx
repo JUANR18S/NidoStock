@@ -14,6 +14,23 @@ import {
   Filter
 } from 'lucide-react'
 
+const formatStock = (total, factor, baseUnit, presUnit) => {
+  if (total === 0) return `0 ${baseUnit || 'uds'}`;
+  if (!factor || factor <= 1) {
+    return `${total} ${baseUnit || 'uds'}`;
+  }
+  const boxes = Math.floor(total / factor);
+  const units = total % factor;
+  
+  if (boxes > 0 && units > 0) {
+    return `${boxes} ${presUnit || 'caja'}(s) + ${units} ${baseUnit || 'ud'}(s)`;
+  } else if (boxes > 0) {
+    return `${boxes} ${presUnit || 'caja'}(s)`;
+  } else {
+    return `${units} ${baseUnit || 'ud'}(s)`;
+  }
+}
+
 export const Products = () => {
   const { role } = useAuth()
   const [products, setProducts] = useState([])
@@ -316,7 +333,7 @@ export const Products = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-slate-700">
-                      ${Number(product.sale_price || 0).toFixed(2)}
+                      ${parseFloat(product.sale_price || 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
@@ -327,7 +344,7 @@ export const Products = () => {
                             ? 'text-amber-600' 
                             : 'text-slate-700'
                         }`}>
-                          {product.total_stock} uds
+                          {formatStock(product.total_stock, product.conversion_factor, product.base_unit, product.presentation_unit)}
                         </span>
                         {product.total_stock === 0 && (
                           <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>
