@@ -33,7 +33,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
         }
       } catch (err) {
         console.error('Error al cargar categorías:', err)
-        setError('No se pudieron cargar las categorías de productos.')
+        setError(`No se pudieron cargar las categorías de productos: ${err.message || 'verifica permisos en Supabase'}.`)
       } finally {
         setLoadingCats(false)
       }
@@ -229,11 +229,13 @@ export const ProductForm = ({ onClose, onSuccess }) => {
                 required
                 value={formData.category_id}
                 onChange={handleChange}
-                disabled={loadingCats}
+                disabled={loadingCats || categories.length === 0}
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium appearance-none"
               >
                 {loadingCats ? (
                   <option value="">Cargando categorías...</option>
+                ) : categories.length === 0 ? (
+                  <option value="">No hay categorías disponibles</option>
                 ) : (
                   categories.map(cat => (
                     <option key={cat.id} value={cat.id}>
@@ -338,7 +340,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || loadingCats || categories.length === 0}
               className="flex-1 py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold rounded-2xl text-xs shadow-md shadow-brand-600/10 active:scale-[0.98] transition-all disabled:opacity-50"
             >
               {submitting ? 'Guardando...' : 'Guardar Producto'}

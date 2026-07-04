@@ -69,11 +69,15 @@ export const deactivateProduct = async (id) => {
 export const getCategories = async () => {
   const { data, error } = await supabase
     .from('product_categories')
-    .select('*')
+    .select('id, name')
     .order('name', { ascending: true })
 
   if (error) {
-    console.error('Error en getCategories:', error.message)
+    console.error('Error en getCategories:', {
+      code: error.code,
+      message: error.message,
+      details: error.details
+    })
     throw error
   }
   return data || []
