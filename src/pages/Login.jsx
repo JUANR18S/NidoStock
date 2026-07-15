@@ -27,8 +27,8 @@ export const Login = () => {
       console.error(err)
       setError(
         err.message === 'Invalid login credentials'
-          ? 'Credenciales inválidas. Por favor verifica tu correo y contraseña.'
-          : 'Ocurrió un error al iniciar sesión. Inténtalo de nuevo.'
+          ? 'El correo o la contraseña no son correctos. Verifica e intenta nuevamente.'
+          : 'Ocurrió un error al iniciar sesión. Intenta de nuevo.'
       )
     } finally {
       setLoading(false)
@@ -40,7 +40,7 @@ export const Login = () => {
     setSuccessMessage('')
 
     if (!email.trim()) {
-      setError('Por favor, ingresa tu correo electrónico primero para poder restablecer la contraseña.')
+      setError('Escribe tu correo electrónico primero para poder recuperar tu contraseña.')
       return
     }
 
@@ -52,10 +52,10 @@ export const Login = () => {
 
       if (resetError) throw resetError
 
-      setSuccessMessage('¡Se ha enviado un enlace de recuperación a tu correo electrónico!')
+      setSuccessMessage('¡Listo! Te enviamos un enlace de recuperación a tu correo electrónico.')
     } catch (err) {
       console.error(err)
-      setError('Error al enviar el enlace de recuperación: ' + (err.message || 'Inténtalo de nuevo.'))
+      setError('No fue posible enviar el enlace de recuperación. Intenta nuevamente.')
     } finally {
       setLoading(false)
     }
@@ -78,7 +78,7 @@ export const Login = () => {
             NidoStock
           </h1>
           <p className="text-sm text-slate-500 mt-2 font-medium">
-            Accede al sistema de inventario y punto de venta
+            Ingresa a tu cuenta para administrar tu negocio
           </p>
         </div>
 
@@ -167,7 +167,7 @@ export const Login = () => {
                 Iniciando sesión...
               </span>
             ) : (
-              'Ingresar al Sistema'
+              'Iniciar sesión'
             )}
           </button>
           
@@ -181,10 +181,10 @@ export const Login = () => {
           </div>
         </form>
 
-        {/* Indicaciones para pruebas */}
+        {/* Pie de página */}
         <div className="mt-8 pt-6 border-t border-slate-100 text-center">
           <p className="text-xs text-slate-400 leading-relaxed font-medium">
-            ¿Es tu primera vez? Configura tu proyecto en Supabase, ejecuta el script SQL e inicia sesión con las credenciales registradas.
+            ¿Necesitas ayuda? Contacta al administrador de tu centro.
           </p>
         </div>
       </div>

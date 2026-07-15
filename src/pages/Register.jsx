@@ -27,12 +27,12 @@ export const Register = () => {
 
     // 1. Validaciones
     if (!fullName.trim()) {
-      setError('El nombre completo es obligatorio.')
+      setError('Escribe tu nombre completo.')
       return
     }
 
     if (!validateEmail(email)) {
-      setError('Por favor ingresa un correo electrónico válido.')
+      setError('Ingresa un correo electrónico válido.')
       return
     }
 
@@ -42,14 +42,14 @@ export const Register = () => {
     }
 
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden.')
+      setError('Las contraseñas no coinciden. Verifica e intenta nuevamente.')
       return
     }
 
     try {
       setLoading(true)
       await signUp(email, password, fullName)
-      setSuccessMessage('Cuenta creada. Revisa tu correo para confirmar la cuenta antes de iniciar sesión.')
+      setSuccessMessage('¡Listo! Te enviamos un correo de confirmación. Revísalo para activar tu cuenta.')
       
       // Limpiar campos
       setFullName('')
@@ -58,7 +58,7 @@ export const Register = () => {
       setConfirmPassword('')
     } catch (err) {
       console.error(err)
-      setError(err.message || 'Ocurrió un error al registrar la cuenta. Inténtalo de nuevo.')
+      setError(err.message || 'No fue posible crear la cuenta. Intenta nuevamente.')
     } finally {
       setLoading(false)
     }
@@ -81,7 +81,7 @@ export const Register = () => {
             Crear Cuenta
           </h1>
           <p className="text-sm text-slate-500 mt-2 font-medium">
-            Regístrate en el sistema de NidoStock
+            Crea tu cuenta para comenzar
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export const Register = () => {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 mx-auto mb-2 animate-bounce">
               <CheckCircle2 className="w-9 h-9" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800">¡Registro Exitoso!</h3>
+            <h3 className="text-xl font-bold text-slate-800">¡Registro exitoso!</h3>
             <p className="text-sm text-slate-500 leading-relaxed max-w-sm mx-auto">
               {successMessage}
             </p>
@@ -107,7 +107,7 @@ export const Register = () => {
                 to="/login"
                 className="inline-block w-full py-3.5 px-4 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold rounded-2xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-sm"
               >
-                Volver al Inicio de Sesión
+                Ir a iniciar sesión
               </Link>
             </div>
           </div>
@@ -157,7 +157,7 @@ export const Register = () => {
             {/* Contraseña */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
-                Contraseña (Mín. 8 caracteres)
+                Contraseña
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
@@ -179,12 +179,13 @@ export const Register = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Mínimo 8 caracteres</p>
             </div>
 
-            {/* Confirmar Contraseña */}
+            {/* Repetir Contraseña */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
-                Confirmar Contraseña
+                Repetir contraseña
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
@@ -222,7 +223,7 @@ export const Register = () => {
                   Creando cuenta...
                 </span>
               ) : (
-                'Registrarse'
+                'Crear mi cuenta'
               )}
             </button>
 

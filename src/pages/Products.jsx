@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getProducts, deactivateProduct } from '../services/productService'
+import { getProducts, getCategories, deactivateProduct } from '../services/productService'
 import { ProductForm } from '../components/ProductForm'
 import { BatchForm } from '../components/BatchForm'
 import { 
@@ -11,7 +12,9 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   XCircle, 
-  Filter
+  Filter,
+  Tag,
+  LayoutGrid
 } from 'lucide-react'
 
 const formatStock = (total, factor, baseUnit, presUnit) => {
@@ -33,11 +36,14 @@ const formatStock = (total, factor, baseUnit, presUnit) => {
 
 export const Products = () => {
   const { role } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterActive, setFilterActive] = useState('all') // 'all', 'active', 'inactive'
+  const [selectedCategory, setSelectedCategory] = useState(null) // null = todas
 
   // Control de Modales
   const [showProductModal, setShowProductModal] = useState(false)
@@ -48,11 +54,15 @@ export const Products = () => {
     try {
       setLoading(true)
       setError('')
-      const data = await getProducts()
-      setProducts(data)
+      const [productsData, categoriesData] = await Promise.all([
+        getProducts(),
+        getCategories()
+      ])
+      setProducts(productsData)
+      setCategories(categoriesData)
     } catch (err) {
       console.error(err)
-      setError('Error al obtener el inventario de productos de Supabase.')
+      setError('No fue posible cargar los productos. Verifica tu conexión e intenta nuevamente.')
     } finally {
       setLoading(false)
     }
@@ -69,8 +79,50 @@ export const Products = () => {
     return () => { active = false }
   }, [])
 
+  // Leer categoría desde URL param al cargar datos
+  useEffect(() => {
+    if (categories.length > 0) {
+      const categoryParam = searchParams.get('categoria')
+      if (categoryParam) {
+        const matchedCat = categories.find(
+          c => c.name.toLowerCase() === categoryParam.toLowerCase()
+        )
+        if (matchedCat) {
+          setSelectedCategory(matchedCat.name)
+        } else {
+          setSelectedCategory(null)
+        }
+      } else {
+        setSelectedCategory(null)
+      }
+    }
+  }, [categories, searchParams])
+
+  // Contar productos por categoría
+  const getCategoryCount = (categoryName) => {
+    if (!categoryName) return products.length
+    return products.filter(p => p.category_name === categoryName).length
+  }
+
+  // Manejar selección de categoría
+  const handleCategorySelect = (categoryName) => {
+    setSelectedCategory(categoryName)
+    // Actualizar URL sin recargar la página
+    if (categoryName) {
+      setSearchParams({ categoria: categoryName })
+    } else {
+      setSearchParams({})
+    }
+  }
+
   // Calcular productos filtrados en tiempo de renderizado
   const filteredProducts = products.filter(p => {
+    // Filtro por categoría
+    if (selectedCategory && p.category_name !== selectedCategory) {
+      return false
+    }
+
+    // Filtro por búsqueda
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase()
       const matches = 
@@ -81,6 +133,7 @@ export const Products = () => {
       if (!matches) return false
     }
 
+    // Filtro por estado
     if (filterActive === 'active') {
       return p.active
     } else if (filterActive === 'inactive') {
@@ -91,14 +144,14 @@ export const Products = () => {
   })
 
   const handleDeactivate = async (id) => {
-    if (!window.confirm('¿Estás seguro de que deseas desactivar este producto?')) return
+    if (!window.confirm('¿Deseas dejar de usar este producto? Su historial se conservará.')) return
 
     try {
       await deactivateProduct(id)
       loadData()
     } catch (err) {
       console.error(err)
-      alert('Error al desactivar el producto.')
+      alert('No fue posible desactivar el producto. Intenta nuevamente.')
     }
   }
 
@@ -162,13 +215,13 @@ export const Products = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 mb-8">
         <div>
           <span className="bg-brand-100 text-brand-700 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-brand-200/50 inline-block mb-2">
-            Inventario General
+            Inventario
           </span>
           <h2 className="text-3xl font-bold tracking-tight text-slate-800">
-            Control de Productos y Lotes
+            Mis Productos
           </h2>
           <p className="text-slate-400 text-sm mt-1">
-            Administra el catálogo de productos cosmetológicos, precios y el stock por lotes.
+            Consulta, organiza y abastece tu inventario desde aquí.
           </p>
         </div>
 
@@ -179,28 +232,89 @@ export const Products = () => {
               className="inline-flex items-center space-x-2 px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold rounded-2xl text-xs active:scale-95 transition-all shadow-sm"
             >
               <Calendar className="w-4 h-4 text-gold-600" />
-              <span>Añadir Lote</span>
+              <span>Registrar lote</span>
             </button>
             <button
               onClick={() => setShowProductModal(true)}
               className="inline-flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold rounded-2xl text-xs active:scale-95 transition-all shadow-md shadow-brand-600/10"
             >
               <Plus className="w-4 h-4" />
-              <span>Crear Producto</span>
+              <span>Nuevo producto</span>
             </button>
           </div>
         )}
       </div>
 
+      {/* Filtro por Categorías */}
+      {!loading && !error && (
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm mb-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Tag className="w-4 h-4 text-slate-400" />
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Filtrar por categoría</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {/* Botón "Todas" */}
+            <button
+              onClick={() => handleCategorySelect(null)}
+              className={`group relative px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 active:scale-95 ${
+                selectedCategory === null
+                  ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-md shadow-brand-600/15'
+                  : 'bg-slate-50 text-slate-600 border border-slate-100 hover:bg-brand-50 hover:border-brand-100 hover:text-brand-700'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Todas</span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  selectedCategory === null
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-200/70 text-slate-500 group-hover:bg-brand-100 group-hover:text-brand-700'
+                }`}>
+                  {products.length}
+                </span>
+              </div>
+            </button>
+
+            {/* Categorías dinámicas */}
+            {categories.map((cat) => {
+              const count = getCategoryCount(cat.name)
+              const isSelected = selectedCategory === cat.name
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategorySelect(cat.name)}
+                  className={`group relative px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 active:scale-95 ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-md shadow-brand-600/15'
+                      : 'bg-slate-50 text-slate-600 border border-slate-100 hover:bg-brand-50 hover:border-brand-100 hover:text-brand-700'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>{cat.name}</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200/70 text-slate-500 group-hover:bg-brand-100 group-hover:text-brand-700'
+                    }`}>
+                      {count}
+                    </span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Buscador y Filtros */}
-      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <div className="relative flex-grow max-w-md">
           <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
             <Search className="w-4 h-4" />
           </span>
           <input
             type="text"
-            placeholder="Buscar por nombre, SKU o categoría..."
+            placeholder="Buscar por nombre, código o categoría..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
@@ -210,7 +324,7 @@ export const Products = () => {
         <div className="flex items-center space-x-2 self-end md:self-auto">
           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center space-x-1.5">
             <Filter className="w-3.5 h-3.5" />
-            <span>Filtrar:</span>
+            <span>Estado:</span>
           </span>
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-1 flex space-x-1">
             <button
@@ -247,22 +361,42 @@ export const Products = () => {
         </div>
       </div>
 
+      {/* Texto dinámico de filtro activo */}
+      {!loading && !error && (
+        <div className="flex items-center justify-between mb-4 px-1">
+          <p className="text-xs text-slate-400 font-medium">
+            {selectedCategory 
+              ? <>Mostrando productos de <strong className="text-slate-600">{selectedCategory}</strong></>
+              : 'Mostrando todos los productos'
+            }
+            {searchTerm && <> · Búsqueda: "<strong className="text-slate-600">{searchTerm}</strong>"</>}
+            <span className="ml-2 text-slate-300">({filteredProducts.length} resultado{filteredProducts.length !== 1 ? 's' : ''})</span>
+          </p>
+          {selectedCategory && (
+            <button
+              onClick={() => handleCategorySelect(null)}
+              className="text-[10px] text-brand-600 hover:text-brand-700 font-bold hover:underline transition-colors"
+            >
+              Limpiar filtro
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Estados de Carga, Error y Vacío */}
       {loading ? (
         <div className="bg-white rounded-3xl p-16 border border-slate-100 shadow-sm text-center flex flex-col items-center justify-center">
           <div className="w-12 h-12 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
-          <p className="text-slate-500 text-sm font-medium">Cargando inventario cosmetológico...</p>
+          <p className="text-slate-500 text-sm font-medium">Cargando productos...</p>
         </div>
       ) : error ? (
         <div className="bg-rose-50 border border-rose-100 rounded-3xl p-6 text-rose-800 flex items-start space-x-4">
           <AlertTriangle className="w-6 h-6 text-rose-600 mt-0.5" />
           <div>
-            <span className="font-bold block text-sm">Error en la Base de Datos</span>
+            <span className="font-bold block text-sm">No se pudo cargar la información</span>
             <p className="text-xs text-rose-700/90 mt-1">{error}</p>
             <p className="text-xs text-rose-700/70 mt-2">
-              Asegúrate de haber creado las tablas de la base de datos ejecutando el archivo{' '}
-              <code className="bg-rose-100 px-1 py-0.5 rounded font-mono text-[10px]">supabase_sprint_2.sql</code>{' '}
-              en el SQL Editor de tu consola Supabase.
+              Si el problema persiste, contacta al administrador del sistema.
             </p>
           </div>
         </div>
@@ -271,11 +405,19 @@ export const Products = () => {
           <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center mb-4">
             <Package className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-slate-800">No se encontraron productos</h3>
+          <h3 className="text-lg font-bold text-slate-800">
+            {selectedCategory 
+              ? `No hay productos en "${selectedCategory}"`
+              : 'No se encontraron productos'
+            }
+          </h3>
           <p className="text-slate-400 text-xs mt-1 max-w-sm">
             {searchTerm || filterActive !== 'all' 
-              ? 'Intenta ajustar los criterios de búsqueda o filtros.'
-              : 'El catálogo de inventario está vacío. Comienza agregando tu primer producto.'}
+              ? 'Intenta con otros términos de búsqueda o cambia el filtro.'
+              : selectedCategory
+                ? 'No hay productos registrados en esta categoría.'
+                : 'Tu inventario está vacío. Comienza agregando tu primer producto.'
+            }
           </p>
           {role === 'admin' && !searchTerm && filterActive === 'all' && (
             <button
@@ -283,7 +425,7 @@ export const Products = () => {
               className="mt-6 inline-flex items-center space-x-2 px-5 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-2xl text-xs transition-all shadow-md shadow-brand-600/10"
             >
               <Plus className="w-4 h-4" />
-              <span>Agregar Primer Producto</span>
+              <span>Crear producto</span>
             </button>
           )}
         </div>
@@ -295,7 +437,7 @@ export const Products = () => {
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Producto</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">SKU</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Código</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Precio Venta</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Stock Total</th>
@@ -328,9 +470,16 @@ export const Products = () => {
                       {product.sku}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                      <button
+                        onClick={() => handleCategorySelect(product.category_name)}
+                        className={`inline-block px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider transition-all hover:scale-105 cursor-pointer ${
+                          selectedCategory === product.category_name
+                            ? 'bg-brand-100 text-brand-700 border border-brand-200'
+                            : 'bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-600'
+                        }`}
+                      >
                         {product.category_name || 'Sin Categoría'}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-slate-700">
                       ${parseFloat(product.sale_price || 0).toFixed(2)}
@@ -373,7 +522,7 @@ export const Products = () => {
                           <button
                             onClick={() => handleAddBatch(product.id)}
                             className="p-1.5 bg-gold-50 border border-gold-100 text-gold-600 hover:bg-gold-100 rounded-xl transition-all"
-                            title="Añadir Lote"
+                            title="Registrar lote"
                           >
                             <Calendar className="w-4 h-4" />
                           </button>
@@ -381,7 +530,7 @@ export const Products = () => {
                             <button
                               onClick={() => handleDeactivate(product.id)}
                               className="p-1.5 bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 rounded-xl transition-all"
-                              title="Desactivar Producto"
+                              title="Dejar de usar este producto"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>

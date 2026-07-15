@@ -28,7 +28,7 @@ export const Navbar = () => {
                 NidoStock
               </span>
               <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                Control de Inventario
+                Gestión de tu negocio
               </span>
             </div>
           </Link>
@@ -44,7 +44,7 @@ export const Navbar = () => {
                 }`
               }
             >
-              Dashboard
+              Inicio
             </NavLink>
             <NavLink
               to="/productos"
@@ -69,7 +69,7 @@ export const Navbar = () => {
                   }`
                 }
               >
-                Usuarios
+                Equipo
               </NavLink>
             )}
           </div>

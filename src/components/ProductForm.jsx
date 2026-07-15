@@ -33,7 +33,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
         }
       } catch (err) {
         console.error('Error al cargar categorías:', err)
-        setError(`No se pudieron cargar las categorías de productos: ${err.message || 'verifica permisos en Supabase'}.`)
+        setError('No se pudieron cargar las categorías. Contacta al administrador si el problema persiste.')
       } finally {
         setLoadingCats(false)
       }
@@ -47,9 +47,9 @@ export const ProductForm = ({ onClose, onSuccess }) => {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
         <div className="bg-white rounded-3xl p-6 max-w-sm w-full border border-slate-100 shadow-xl text-center">
           <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-slate-800">Acceso Restringido</h3>
+          <h3 className="text-lg font-bold text-slate-800">Acción no disponible</h3>
           <p className="text-sm text-slate-500 mt-2">
-            Solo los administradores tienen permisos para agregar nuevos productos.
+            Solo los administradores pueden agregar nuevos productos al inventario.
           </p>
           <button
             onClick={onClose}
@@ -74,29 +74,29 @@ export const ProductForm = ({ onClose, onSuccess }) => {
     e.preventDefault()
     setError('')
 
-    // Validaciones básicas
+    // Validaciones amigables
     if (!formData.name.trim()) {
-      setError('El nombre del producto es obligatorio.')
+      setError('Escribe el nombre del producto.')
       return
     }
     if (!formData.sku.trim()) {
-      setError('El SKU es obligatorio.')
+      setError('Ingresa un código único para identificar este producto.')
       return
     }
     if (!formData.category_id) {
-      setError('Debes seleccionar una categoría.')
+      setError('Selecciona una categoría para el producto.')
       return
     }
     
     const price = parseFloat(formData.sale_price)
     if (isNaN(price) || price < 0) {
-      setError('El precio de venta debe ser un número mayor o igual a 0.')
+      setError('Ingresa un precio de venta válido para el producto.')
       return
     }
 
     const factor = parseInt(formData.conversion_factor)
     if (isNaN(factor) || factor < 1) {
-      setError('El factor de conversión debe ser un número entero mayor o igual a 1.')
+      setError('Indica cuántas unidades contiene cada presentación (mínimo 1).')
       return
     }
 
@@ -111,9 +111,9 @@ export const ProductForm = ({ onClose, onSuccess }) => {
     } catch (err) {
       console.error(err)
       if (err.code === '23505') {
-        setError('El SKU ingresado ya está registrado con otro producto.')
+        setError('Ya existe un producto con ese código. Usa un código diferente.')
       } else {
-        setError(err.message || 'Error al guardar el producto. Inténtalo de nuevo.')
+        setError('No fue posible guardar el producto. Verifica la información e intenta nuevamente.')
       }
     } finally {
       setSubmitting(false)
@@ -133,7 +133,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
             <div>
               <h3 className="font-bold text-slate-800 leading-tight">Nuevo Producto</h3>
               <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                Catálogo de Inventario
+                Agrega un producto a tu inventario
               </p>
             </div>
           </div>
@@ -156,7 +156,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
           {/* Nombre del Producto */}
           <div>
             <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-              Nombre del Producto *
+              Nombre del producto *
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
@@ -175,10 +175,10 @@ export const ProductForm = ({ onClose, onSuccess }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* SKU */}
+            {/* Código del Producto */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                SKU / Código Único *
+                Código del producto *
               </label>
               <input
                 type="text"
@@ -186,15 +186,16 @@ export const ProductForm = ({ onClose, onSuccess }) => {
                 required
                 value={formData.sku}
                 onChange={handleChange}
-                placeholder="Ej. FAC-CRE-005"
+                placeholder="Ej. CREMA-001"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
               />
+              <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Un código único para identificar este producto.</p>
             </div>
 
             {/* Precio de Venta */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                Precio de Venta ($) *
+                Precio de venta al cliente ($) *
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
@@ -212,6 +213,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
                 />
               </div>
+              <p className="text-[10px] text-slate-400 mt-1.5 ml-1">El precio que pagará el cliente.</p>
             </div>
           </div>
 
@@ -251,7 +253,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Unidad Base *
+                ¿Cómo se vende? *
               </label>
               <input
                 type="text"
@@ -262,10 +264,11 @@ export const ProductForm = ({ onClose, onSuccess }) => {
                 placeholder="ej. unidad"
                 className="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl outline-none focus:border-brand-500 transition-all text-xs font-medium"
               />
+              <p className="text-[10px] text-slate-400 mt-1 ml-0.5">Ej: unidad, ml, gramo</p>
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Presentación Comercial *
+                ¿Cómo lo compras? *
               </label>
               <input
                 type="text"
@@ -276,10 +279,11 @@ export const ProductForm = ({ onClose, onSuccess }) => {
                 placeholder="ej. caja"
                 className="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl outline-none focus:border-brand-500 transition-all text-xs font-medium"
               />
+              <p className="text-[10px] text-slate-400 mt-1 ml-0.5">Ej: caja, paquete, frasco</p>
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Factor Conversión *
+                ¿Cuántas unidades trae? *
               </label>
               <input
                 type="number"
@@ -288,16 +292,17 @@ export const ProductForm = ({ onClose, onSuccess }) => {
                 min="1"
                 value={formData.conversion_factor}
                 onChange={handleChange}
-                placeholder="ej. 50"
+                placeholder="ej. 12"
                 className="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl outline-none focus:border-brand-500 transition-all text-xs font-medium"
               />
+              <p className="text-[10px] text-slate-400 mt-1 ml-0.5">Ej: 1 caja = 12 → escribe 12</p>
             </div>
           </div>
 
           {/* Descripción */}
           <div>
             <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-              Descripción Corta
+              Descripción (opcional)
             </label>
             <div className="relative">
               <span className="absolute left-4 top-3.5 text-slate-400">
@@ -307,7 +312,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Detalle del producto, tamaño, volumen..."
+                placeholder="Agrega detalles útiles: tamaño, volumen, fragancia..."
                 rows="3"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
               ></textarea>
@@ -325,7 +330,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
               className="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500 accent-brand-600"
             />
             <label htmlFor="active" className="text-xs font-semibold text-slate-700 cursor-pointer select-none">
-              Habilitar producto inmediatamente en el catálogo
+              Mostrar este producto en el inventario
             </label>
           </div>
 
@@ -343,7 +348,7 @@ export const ProductForm = ({ onClose, onSuccess }) => {
               disabled={submitting || loadingCats || categories.length === 0}
               className="flex-1 py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold rounded-2xl text-xs shadow-md shadow-brand-600/10 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {submitting ? 'Guardando...' : 'Guardar Producto'}
+              {submitting ? 'Guardando...' : 'Guardar producto'}
             </button>
           </div>
         </form>

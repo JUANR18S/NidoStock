@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import { getProducts } from '../services/productService'
 import { 
   TrendingUp, 
   Layers, 
@@ -9,12 +11,15 @@ import {
   Calendar, 
   AlertTriangle, 
   ShieldCheck, 
-  Terminal,
-  Database
+  PackageCheck,
+  UserCheck,
+  LayoutGrid,
+  ArrowRight
 } from 'lucide-react'
 
 export const Dashboard = () => {
   const { user, role } = useAuth()
+  const navigate = useNavigate()
   const [categories, setCategories] = useState([])
   const [loadingCats, setLoadingCats] = useState(true)
   const [dbError, setDbError] = useState(false)
@@ -24,6 +29,7 @@ export const Dashboard = () => {
   const [activeBatchesCount, setActiveBatchesCount] = useState(0)
   const [expiringBatchesCount, setExpiringBatchesCount] = useState(0)
   const [loadingMetrics, setLoadingMetrics] = useState(true)
+  const [allProducts, setAllProducts] = useState([])
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -76,6 +82,15 @@ export const Dashboard = () => {
         if (expError) throw expError
         setExpiringBatchesCount(expCount || 0)
 
+        // 5. Obtener todos los productos para contadores de categorías
+        try {
+          const prodsData = await getProducts()
+          setAllProducts(prodsData || [])
+        } catch {
+          // Si falla, no es crítico — los contadores simplemente no aparecerán
+          setAllProducts([])
+        }
+
       } catch (err) {
         console.error('Error al cargar datos del Dashboard:', err)
         setDbError(true)
@@ -88,6 +103,20 @@ export const Dashboard = () => {
     loadDashboardData()
   }, [])
 
+  // Contar productos por categoría
+  const getCategoryCount = (categoryName) => {
+    if (!categoryName) return allProducts.length
+    return allProducts.filter(p => p.category_name === categoryName).length
+  }
+
+  const handleCategoryClick = (categoryName) => {
+    if (categoryName) {
+      navigate(`/productos?categoria=${encodeURIComponent(categoryName)}`)
+    } else {
+      navigate('/productos')
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       
@@ -96,15 +125,15 @@ export const Dashboard = () => {
         <div className="absolute right-0 top-0 translate-x-[20%] translate-y-[-20%] w-[300px] h-[300px] rounded-full bg-white/5 blur-3xl"></div>
         <div className="relative z-10">
           <span className="bg-white/10 text-brand-100 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-white/10 inline-block mb-3">
-            Sesión Activa
+            Conectado
           </span>
           <h2 className="text-3xl font-bold tracking-tight">
             ¡Hola, {user?.email?.split('@')[0]}!
           </h2>
           <p className="text-brand-100/80 text-sm mt-1 max-w-xl">
-            Bienvenido al panel de control de NidoStock. Tienes permisos de{' '}
+            Este es tu resumen del día. Tu perfil es de{' '}
             <strong className="text-white underline decoration-gold-300">
-              {role === 'admin' ? 'Administrador completo' : 'Empleado de punto de venta'}
+              {role === 'admin' ? 'Administrador' : 'Empleado'}
             </strong>.
           </p>
         </div>
@@ -135,7 +164,7 @@ export const Dashboard = () => {
                 <Calendar className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Lotes Activos</span>
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Lotes con stock</span>
                 {loadingMetrics ? (
                   <div className="h-7 w-12 bg-slate-100 animate-pulse rounded mt-1"></div>
                 ) : (
@@ -151,7 +180,7 @@ export const Dashboard = () => {
               <div>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Ventas (Mes)</span>
                 <span className="text-2xl font-bold text-slate-800">$1,240.00</span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">TODO: Sprint 3</span>
+                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">Próximamente</span>
               </div>
             </div>
 
@@ -160,8 +189,8 @@ export const Dashboard = () => {
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Roles Activos</span>
-                <span className="text-2xl font-bold text-slate-800">2 (Admin)</span>
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Tipos de usuario</span>
+                <span className="text-2xl font-bold text-slate-800">Administrador</span>
               </div>
             </div>
           </>
@@ -173,9 +202,9 @@ export const Dashboard = () => {
                 <TrendingUp className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Mis Ventas de Hoy</span>
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Mis ventas de hoy</span>
                 <span className="text-2xl font-bold text-slate-800">$340.00</span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">TODO: Ventas en Sprint 3</span>
+                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">Próximamente</span>
               </div>
             </div>
 
@@ -184,7 +213,7 @@ export const Dashboard = () => {
                 <AlertTriangle className="w-6 h-6 animate-pulse" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Lotes por Vencer</span>
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Por vencer</span>
                 {loadingMetrics ? (
                   <div className="h-7 w-12 bg-slate-100 animate-pulse rounded mt-1"></div>
                 ) : (
@@ -200,7 +229,7 @@ export const Dashboard = () => {
               <div>
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Clientes</span>
                 <span className="text-2xl font-bold text-slate-800">12</span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">TODO: Clientes en Sprint 3</span>
+                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">Próximamente</span>
               </div>
             </div>
           </>
@@ -208,77 +237,122 @@ export const Dashboard = () => {
 
       </div>
 
-      {/* Sección de Categorías Integrada con Supabase */}
+      {/* Filtro rápido por categorías */}
       <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mb-8">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="w-9 h-9 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center">
-            <Tag className="w-5 h-5" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center">
+              <Tag className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 leading-tight">Categorías de productos</h3>
+              <p className="text-xs text-slate-400 font-medium">Selecciona una categoría para ver sus productos</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-slate-800 leading-tight">Categorías en la Base de Datos</h3>
-            <p className="text-xs text-slate-400 font-medium">Categorías iniciales cargadas dinámicamente desde Supabase</p>
-          </div>
+          <button
+            onClick={() => navigate('/productos')}
+            className="hidden md:inline-flex items-center space-x-1.5 text-xs text-brand-600 hover:text-brand-700 font-bold hover:underline transition-colors"
+          >
+            <span>Ver todos</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {loadingCats ? (
           <div className="flex items-center space-x-2 py-4">
             <div className="w-4 h-4 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
-            <span className="text-xs text-slate-400 font-medium">Obteniendo categorías...</span>
+            <span className="text-xs text-slate-400 font-medium">Cargando categorías...</span>
           </div>
         ) : dbError ? (
           <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl text-amber-800">
             <div className="flex items-start space-x-3">
-              <Database className="w-6 h-6 mt-0.5 text-amber-600" />
+              <AlertTriangle className="w-6 h-6 mt-0.5 text-amber-600" />
               <div>
-                <span className="font-semibold block text-sm">¿Aún no has conectado la Base de Datos?</span>
+                <span className="font-semibold block text-sm">Configuración pendiente</span>
                 <p className="text-xs text-amber-700/90 mt-1 max-w-xl leading-relaxed">
-                  Para sincronizar las categorías dinámicas, crea un proyecto en Supabase, ejecuta el contenido de{' '}
-                  <code className="bg-amber-100/80 px-1 py-0.5 rounded font-mono text-[11px]">supabase_schema.sql</code>{' '}
-                  en la consola SQL, y configura tus claves en el archivo <code className="bg-amber-100/80 px-1 py-0.5 rounded font-mono text-[11px]">.env</code>.
+                  No fue posible conectar con el sistema. Por favor contacta al administrador para completar la configuración inicial.
                 </p>
               </div>
             </div>
           </div>
         ) : categories.length === 0 ? (
-          <p className="text-xs text-slate-400 py-4 font-medium">No se encontraron categorías cargadas.</p>
+          <p className="text-xs text-slate-400 py-4 font-medium">Aún no hay categorías registradas.</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            {categories.map((cat) => (
-              <div 
-                key={cat.id} 
-                className="bg-slate-50 hover:bg-brand-50 border border-slate-100 hover:border-brand-100 px-4 py-3 rounded-2xl text-center group transition-all duration-200"
-              >
-                <span className="text-xs font-bold text-slate-600 group-hover:text-brand-700 transition-colors">
-                  {cat.name}
+          <div className="flex flex-wrap gap-3">
+            {/* Botón Todas */}
+            <button
+              onClick={() => handleCategoryClick(null)}
+              className="group bg-slate-50 hover:bg-brand-50 border border-slate-100 hover:border-brand-100 px-5 py-3 rounded-2xl text-center transition-all duration-200 cursor-pointer active:scale-95"
+            >
+              <div className="flex items-center space-x-2">
+                <LayoutGrid className="w-3.5 h-3.5 text-slate-400 group-hover:text-brand-600 transition-colors" />
+                <span className="text-xs font-bold text-slate-600 group-hover:text-brand-700 transition-colors">Todas</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-200/70 text-slate-500 group-hover:bg-brand-100 group-hover:text-brand-700 transition-all">
+                  {getCategoryCount(null)}
                 </span>
               </div>
+            </button>
+            {/* Categorías dinámicas */}
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.name)}
+                className="group bg-slate-50 hover:bg-brand-50 border border-slate-100 hover:border-brand-100 px-5 py-3 rounded-2xl text-center transition-all duration-200 cursor-pointer active:scale-95"
+              >
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-bold text-slate-600 group-hover:text-brand-700 transition-colors">
+                    {cat.name}
+                  </span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-200/70 text-slate-500 group-hover:bg-brand-100 group-hover:text-brand-700 transition-all">
+                    {getCategoryCount(cat.name)}
+                  </span>
+                </div>
+              </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Reglas de Trazabilidad y Seguridad (Informativo) */}
+      {/* Así protege NidoStock tu información */}
       <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/50">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-9 h-9 bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center">
-            <Terminal className="w-5 h-5" />
+        <div className="flex items-center space-x-3 mb-5">
+          <div className="w-9 h-9 bg-brand-100 text-brand-700 rounded-lg flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5" />
           </div>
-          <h3 className="text-sm font-bold text-slate-800">Reglas de Negocio Aplicadas en Base de Datos</h3>
+          <h3 className="text-sm font-bold text-slate-800">¿Cómo protege NidoStock tu información?</h3>
         </div>
-        <ul className="text-xs text-slate-500 space-y-2 leading-relaxed">
-          <li className="flex items-center space-x-2">
-            <span className="w-1.5 h-1.5 bg-brand-500 rounded-full"></span>
-            <span><strong>Sin Eliminaciones Físicas</strong>: Las ventas y movimientos no se pueden eliminar.</span>
-          </li>
-          <li className="flex items-center space-x-2">
-            <span className="w-1.5 h-1.5 bg-brand-500 rounded-full"></span>
-            <span><strong>Kardex Auditor</strong>: Toda entrada, salida o ajuste sensible requiere el registro del ID del usuario.</span>
-          </li>
-          <li className="flex items-center space-x-2">
-            <span className="w-1.5 h-1.5 bg-brand-500 rounded-full"></span>
-            <span><strong>Restricción del Empleado</strong>: Los empleados tienen bloqueo RLS para actualizar precios y registrar stock directo.</span>
-          </li>
-        </ul>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Tarjeta 1 */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-lg">🛡️</span>
+              <span className="text-xs font-bold text-slate-700">Tu información siempre está protegida</span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Cada movimiento del inventario queda registrado automáticamente con la fecha, hora y el usuario que lo realizó.
+            </p>
+          </div>
+          {/* Tarjeta 2 */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-lg">📦</span>
+              <span className="text-xs font-bold text-slate-700">Nunca pierdes el historial</span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Aunque un producto deje de utilizarse, su historial de movimientos y ventas permanece disponible para tu consulta.
+            </p>
+          </div>
+          {/* Tarjeta 3 */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-lg">👤</span>
+              <span className="text-xs font-bold text-slate-700">Cada usuario tiene permisos diferentes</span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Los empleados solo pueden realizar las acciones que les corresponden. Solo los administradores pueden modificar precios y registrar inventario.
+            </p>
+          </div>
+        </div>
       </div>
 
     </div>

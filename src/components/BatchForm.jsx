@@ -1,14 +1,27 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { createBatch, getProducts } from '../services/productService'
-import { X, Calendar, Layers, Clipboard, AlertTriangle } from 'lucide-react'
+import { X, Calendar, Layers, Clipboard, AlertTriangle, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
+
+/**
+ * Genera un código de lote automático con formato LOT-YYYYMMDD-XXX
+ * donde XXX es un número aleatorio de 3 dígitos para evitar duplicados.
+ */
+const generateBatchCode = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const seq = String(Math.floor(Math.random() * 900) + 100) // 100-999
+  return `LOT-${year}${month}${day}-${seq}`
+}
 
 export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
   const { role } = useAuth()
   const [products, setProducts] = useState([])
   const [formData, setFormData] = useState({
     product_id: preselectedProductId || '',
-    batch_code: '',
+    batch_code: generateBatchCode(),
     expiration_date: '',
     initial_quantity: '',
     current_quantity: '',
@@ -17,6 +30,7 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
   const [loadingProds, setLoadingProds] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [showHelp, setShowHelp] = useState(false)
 
   // Cargar productos al montar
   useEffect(() => {
@@ -30,7 +44,7 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
         }
       } catch (err) {
         console.error('Error al cargar productos:', err)
-        setError('No se pudieron cargar los productos del catálogo.')
+        setError('No se pudieron cargar los productos. Intenta nuevamente.')
       } finally {
         setLoadingProds(false)
       }
@@ -44,9 +58,9 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
         <div className="bg-white rounded-3xl p-6 max-w-sm w-full border border-slate-100 shadow-xl text-center">
           <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-slate-800">Acceso Restringido</h3>
+          <h3 className="text-lg font-bold text-slate-800">Acción no disponible</h3>
           <p className="text-sm text-slate-500 mt-2">
-            Solo los administradores tienen permisos para registrar nuevos lotes.
+            Solo los administradores pueden registrar nuevos lotes de mercancía.
           </p>
           <button
             onClick={onClose}
@@ -88,17 +102,17 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
     e.preventDefault()
     setError('')
 
-    // Validaciones básicas
+    // Validaciones amigables
     if (!formData.product_id) {
-      setError('Debes seleccionar un producto.')
+      setError('Selecciona el producto al que pertenece este lote.')
       return
     }
     if (!formData.batch_code.trim()) {
-      setError('El código de lote es obligatorio.')
+      setError('Ingresa un código para identificar este lote.')
       return
     }
     if (!formData.expiration_date) {
-      setError('La fecha de vencimiento es obligatoria.')
+      setError('Indica la fecha de vencimiento del lote.')
       return
     }
 
@@ -106,7 +120,7 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
     today.setHours(0, 0, 0, 0)
     const expirationTime = new Date(formData.expiration_date + 'T00:00:00').getTime()
     if (expirationTime < today.getTime()) {
-      setError('La fecha de vencimiento no puede ser anterior a hoy.')
+      setError('La fecha de vencimiento debe ser una fecha futura.')
       return
     }
 
@@ -115,19 +129,19 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
     const price = parseFloat(formData.purchase_price)
 
     if (isNaN(initQty) || initQty < 0) {
-      setError('La cantidad inicial debe ser un número entero mayor o igual a 0.')
+      setError('Indica cuántas unidades recibiste (debe ser un número válido).')
       return
     }
     if (isNaN(currQty) || currQty < 0) {
-      setError('La cantidad actual debe ser un número entero mayor o igual a 0.')
+      setError('Indica cuántas unidades están disponibles actualmente (debe ser un número válido).')
       return
     }
     if (currQty > initQty) {
-      setError('La cantidad actual no puede ser mayor que la cantidad inicial.')
+      setError('Las unidades disponibles no pueden superar las unidades recibidas.')
       return
     }
     if (isNaN(price) || price < 0) {
-      setError('El precio de compra debe ser un número mayor o igual a 0.')
+      setError('Ingresa un costo de compra válido (debe ser un número válido).')
       return
     }
 
@@ -144,7 +158,13 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
       onSuccess()
     } catch (err) {
       console.error(err)
-      setError(err.message || 'Error al registrar el lote. Inténtalo de nuevo.')
+      // Manejar errores comunes de forma amigable
+      const msg = err.message || ''
+      if (err.code === '23505' || msg.toLowerCase().includes('duplicate')) {
+        setError('Ya existe un lote con ese código. Usa un código diferente.')
+      } else {
+        setError('No fue posible registrar el lote. Verifica la información e intenta nuevamente.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -161,9 +181,9 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 leading-tight">Registrar Lote de Stock</h3>
+              <h3 className="font-bold text-slate-800 leading-tight">Registrar nuevo lote</h3>
               <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                Control de Caducidad y Abastecimiento
+                Ingresa la mercancía que recibiste
               </p>
             </div>
           </div>
@@ -173,6 +193,26 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Bloque educativo colapsable */}
+        <div className="px-6 pt-4">
+          <button
+            type="button"
+            onClick={() => setShowHelp(!showHelp)}
+            className="flex items-center space-x-2 text-xs text-brand-600 hover:text-brand-700 font-semibold transition-colors"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>¿Qué es un lote y para qué sirve?</span>
+            {showHelp ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          {showHelp && (
+            <div className="mt-3 bg-brand-50 border border-brand-100 rounded-2xl p-4 text-[11px] text-slate-600 leading-relaxed space-y-2 animate-fade-in">
+              <p><strong className="text-slate-700">¿Qué es un lote?</strong> Un lote representa un grupo de productos comprados o recibidos al mismo tiempo.</p>
+              <p><strong className="text-slate-700">¿Por qué es útil?</strong> Permite controlar fechas de vencimiento, compras y el inventario de forma precisa.</p>
+              <p><strong className="text-slate-700">¿Cómo funciona?</strong> Cuando realizas una venta, el sistema selecciona automáticamente el lote más antiguo disponible para evitar pérdidas por vencimiento.</p>
+            </div>
+          )}
         </div>
 
         {/* Formulario */}
@@ -203,7 +243,7 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
                 {loadingProds ? (
                   <option value="">Cargando productos...</option>
                 ) : products.length === 0 ? (
-                  <option value="">No hay productos creados en el sistema</option>
+                  <option value="">Primero necesitas crear un producto</option>
                 ) : (
                   products.map(prod => (
                     <option key={prod.id} value={prod.id}>
@@ -213,13 +253,14 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
                 )}
               </select>
             </div>
+            <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Selecciona el producto al que pertenece este lote.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Código de Lote */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                Código del Lote *
+                Código del lote *
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
@@ -231,16 +272,17 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
                   required
                   value={formData.batch_code}
                   onChange={handleChange}
-                  placeholder="Ej. LOT-2026-X1"
+                  placeholder="LOT-20260714-001"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
                 />
               </div>
+              <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Se genera automáticamente. Puedes modificarlo si lo deseas.</p>
             </div>
 
             {/* Fecha de Vencimiento */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                Fecha de Vencimiento *
+                Fecha de vencimiento *
               </label>
               <input
                 type="date"
@@ -250,6 +292,7 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
               />
+              <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Te avisaremos cuando el producto esté próximo a vencer.</p>
             </div>
           </div>
 
@@ -257,7 +300,7 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
             {/* Cantidad Inicial */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                Cant. Inicial *
+                Unidades recibidas *
               </label>
               <input
                 type="number"
@@ -269,12 +312,13 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
                 placeholder="Ej. 100"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
               />
+              <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Cantidad que ingresan al inventario.</p>
             </div>
 
             {/* Cantidad Actual */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                Cant. Actual *
+                Disponibles *
               </label>
               <input
                 type="number"
@@ -286,12 +330,13 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
                 placeholder="Ej. 100"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
               />
+              <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Normalmente igual a las recibidas.</p>
             </div>
 
             {/* Precio de Adquisición */}
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                Costo Unit. ($) *
+                Costo por unidad ($) *
               </label>
               <input
                 type="number"
@@ -304,19 +349,20 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
                 placeholder="0.00"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-xs font-medium"
               />
+              <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Precio de compra. Sirve para calcular tu ganancia.</p>
             </div>
           </div>
 
           {/* Equivalencia de Unidades en Lotes */}
           {selectedProduct && selectedProduct.conversion_factor > 1 && (
             <div className="bg-amber-50 border border-amber-100 p-3 rounded-2xl text-[11px] text-amber-800 font-medium leading-relaxed animate-fade-in">
-              <span className="font-bold block text-xs mb-1">Equivalencia de Inventario</span>
+              <span className="font-bold block text-xs mb-1">Equivalencia de inventario</span>
               <p>
-                Este producto se maneja con factor de conversión:{' '}
+                Este producto se maneja por presentación:{' '}
                 <strong>1 {selectedProduct.presentation_unit} = {selectedProduct.conversion_factor} {selectedProduct.base_unit}s</strong>.
               </p>
               <p className="mt-1">
-                La cantidad inicial equivale a:{' '}
+                La cantidad ingresada equivale a:{' '}
                 <strong>
                   {Math.floor((parseInt(formData.initial_quantity, 10) || 0) / selectedProduct.conversion_factor)}{' '}
                   {selectedProduct.presentation_unit}s
@@ -344,7 +390,7 @@ export const BatchForm = ({ onClose, onSuccess, preselectedProductId }) => {
               disabled={submitting}
               className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 text-white font-semibold rounded-2xl text-xs shadow-md shadow-gold-500/10 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {submitting ? 'Registrando...' : 'Registrar Lote'}
+              {submitting ? 'Guardando...' : 'Registrar lote'}
             </button>
           </div>
         </form>

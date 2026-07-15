@@ -10,7 +10,7 @@ import {
   UserX,
   Mail,
   Calendar,
-  Lock
+  Info
 } from 'lucide-react'
 
 export const Users = () => {
@@ -34,7 +34,7 @@ export const Users = () => {
       setProfiles(data || [])
     } catch (err) {
       console.error(err)
-      setError(err.message || 'Error al obtener la lista de usuarios de Supabase.')
+      setError('No fue posible cargar la lista de usuarios. Intenta nuevamente.')
     } finally {
       setLoading(false)
     }
@@ -63,15 +63,24 @@ export const Users = () => {
     )
   })
 
+  // Mapeo de roles a nombres legibles
+  const getRoleName = (roleValue) => {
+    switch (roleValue) {
+      case 'admin': return 'Administrador'
+      case 'employee': return 'Empleado'
+      default: return roleValue
+    }
+  }
+
   // Si el usuario ingresa de alguna forma sin ser admin
   if (role !== 'admin') {
     return (
       <div className="max-w-7xl mx-auto px-6 py-16 flex items-center justify-center">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-slate-100 shadow-xl text-center">
           <ShieldAlert className="w-16 h-16 text-rose-500 mx-auto mb-4 animate-pulse" />
-          <h3 className="text-xl font-bold text-slate-800">Acceso Restringido</h3>
+          <h3 className="text-xl font-bold text-slate-800">Sección exclusiva para administradores</h3>
           <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Solo los administradores autorizados tienen permisos para visualizar y gestionar el panel de usuarios.
+            Esta sección es exclusiva para administradores del sistema. Si necesitas acceso, contacta al administrador principal.
           </p>
         </div>
       </div>
@@ -97,24 +106,24 @@ export const Users = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 mb-8">
         <div>
           <span className="bg-purple-100 text-purple-700 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-purple-200/50 inline-block mb-2">
-            Administración del Sistema
+            Equipo de trabajo
           </span>
           <h2 className="text-3xl font-bold tracking-tight text-slate-800">
-            Control de Usuarios y Roles
+            Mi equipo
           </h2>
           <p className="text-slate-400 text-sm mt-1">
-            Visualiza y administra el personal con acceso al sistema cosmetológico.
+            Consulta quiénes tienen acceso y qué pueden hacer en el sistema.
           </p>
         </div>
       </div>
 
-      {/* Alerta de Auditoría RLS (Informativa y de Seguridad) */}
+      {/* Nota informativa sobre cambios de permisos */}
       <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 text-amber-800 flex items-start space-x-4 mb-8">
-        <Lock className="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0" />
+        <Info className="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0" />
         <div>
-          <span className="font-bold block text-sm">Control de Modificación Protegido</span>
+          <span className="font-bold block text-sm">Cambios de permisos</span>
           <p className="text-xs text-amber-700/90 mt-1 leading-relaxed">
-            Para mitigar riesgos de seguridad y escalación de privilegios, los controles de edición de roles en la interfaz se encuentran **inhabilitados temporalmente para auditoría**. La reasignación de roles debe hacerse de forma segura ejecutando consultas directas en el SQL Editor de Supabase o mediante la API administrativa en el backend.
+            Los cambios de permisos se realizan desde la administración central del sistema. Si necesitas modificar el rol de algún miembro del equipo, contacta al administrador principal.
           </p>
         </div>
       </div>
@@ -134,7 +143,7 @@ export const Users = () => {
           />
         </div>
         <div className="text-xs text-slate-400 font-semibold md:ml-auto">
-          Total: {filteredProfiles.length} usuario(s)
+          Total: {filteredProfiles.length} miembro(s)
         </div>
       </div>
 
@@ -142,13 +151,13 @@ export const Users = () => {
       {loading ? (
         <div className="bg-white rounded-3xl p-16 border border-slate-100 shadow-sm text-center flex flex-col items-center justify-center">
           <div className="w-12 h-12 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
-          <p className="text-slate-500 text-sm font-medium">Obteniendo lista de usuarios...</p>
+          <p className="text-slate-500 text-sm font-medium">Cargando equipo de trabajo...</p>
         </div>
       ) : error ? (
         <div className="bg-rose-50 border border-rose-100 rounded-3xl p-6 text-rose-800 flex items-start space-x-4">
           <AlertTriangle className="w-6 h-6 text-rose-600 mt-0.5" />
           <div>
-            <span className="font-bold block text-sm">Error al cargar usuarios</span>
+            <span className="font-bold block text-sm">No se pudo cargar la información</span>
             <p className="text-xs text-rose-700/90 mt-1">{error}</p>
           </div>
         </div>
@@ -157,9 +166,9 @@ export const Users = () => {
           <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center mb-4">
             <UsersIcon className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-slate-800">No se encontraron usuarios</h3>
+          <h3 className="text-lg font-bold text-slate-800">No se encontraron miembros</h3>
           <p className="text-slate-400 text-xs mt-1 max-w-sm">
-            Intenta ajustar los criterios de búsqueda.
+            Intenta con otros términos de búsqueda.
           </p>
         </div>
       ) : (
@@ -169,7 +178,7 @@ export const Users = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Usuario</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Correo Electrónico</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
@@ -191,7 +200,7 @@ export const Users = () => {
                         </div>
                         <div>
                           <span className="font-bold text-slate-800 text-xs block group-hover:text-purple-700 transition-colors">
-                            {profile.full_name || 'Sin Nombre Registrado'}
+                            {profile.full_name || 'Sin nombre registrado'}
                           </span>
                         </div>
                       </div>
@@ -212,7 +221,7 @@ export const Users = () => {
                           ? 'bg-purple-100 text-purple-700'
                           : 'bg-slate-100 text-slate-600'
                       }`}>
-                        {profile.role}
+                        {getRoleName(profile.role)}
                       </span>
                     </td>
 
@@ -242,7 +251,7 @@ export const Users = () => {
                     {/* Acciones */}
                     <td className="px-6 py-4 text-right">
                       <span className="text-[10px] text-slate-400 font-semibold italic bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg">
-                        Modificar vía SQL/API
+                        Contactar administrador
                       </span>
                     </td>
                   </tr>

@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
               Stock
             </div>
           </div>
-          <p className="mt-4 text-slate-500 font-medium text-sm">Cargando aplicación de inventario...</p>
+          <p className="mt-4 text-slate-500 font-medium text-sm">Preparando todo para ti...</p>
         </div>
       )}
     </AuthContext.Provider>
