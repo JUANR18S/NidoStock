@@ -41,41 +41,40 @@ export const AuthProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    // 1. Obtener sesión actual al montar
-    const getInitialSession = async () => {
-      setLoading(true)
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (session?.user) {
-        setUser(session.user)
-        await fetchProfile(session.user.id)
-      } else {
-        setUser(null)
-        setProfile(null)
-        setRole(null)
-      }
-      setLoading(false)
-    }
+    let active = true
 
-    getInitialSession()
-
-    // 2. Escuchar cambios de estado de autenticación
+    // Escuchar cambios de estado de autenticación (se dispara inmediatamente con INITIAL_SESSION)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setLoading(true)
-        if (session?.user) {
-          setUser(session.user)
-          await fetchProfile(session.user.id)
-        } else {
-          setUser(null)
-          setProfile(null)
-          setRole(null)
+        try {
+          if (!active) return
+
+          setLoading(true)
+          if (session?.user) {
+            setUser(session.user)
+            await fetchProfile(session.user.id)
+          } else {
+            setUser(null)
+            setProfile(null)
+            setRole(null)
+          }
+        } catch (err) {
+          console.error('Error en onAuthStateChange callback:', err)
+          if (active) {
+            setUser(null)
+            setProfile(null)
+            setRole(null)
+          }
+        } finally {
+          if (active) {
+            setLoading(false)
+          }
         }
-        setLoading(false)
       }
     )
 
     return () => {
+      active = false
       subscription?.unsubscribe()
     }
   }, [])
