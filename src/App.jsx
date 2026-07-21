@@ -7,6 +7,9 @@ import { Users } from './pages/Users'
 import { Navbar } from './components/Navbar'
 import { Dashboard } from './pages/Dashboard'
 import { Products } from './pages/Products'
+import { Kardex } from './pages/Kardex'
+import Sales from './pages/Sales'
+import SalesHistory from './pages/SalesHistory'
 
 function App() {
   return (
@@ -36,6 +39,45 @@ function App() {
                   <Navbar />
                   <main className="flex-grow">
                     <Products />
+                  </main>
+                </div>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/ventas" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'employee']}>
+                <div className="min-h-screen flex flex-col bg-slate-50">
+                  <Navbar />
+                  <main className="flex-grow">
+                    <Sales />
+                  </main>
+                </div>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/historial-ventas" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'employee']}>
+                <div className="min-h-screen flex flex-col bg-slate-50">
+                  <Navbar />
+                  <main className="flex-grow">
+                    <SalesHistory />
+                  </main>
+                </div>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/kardex" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'employee']}>
+                <div className="min-h-screen flex flex-col bg-slate-50">
+                  <Navbar />
+                  <main className="flex-grow">
+                    <Kardex />
                   </main>
                 </div>
               </ProtectedRoute>
