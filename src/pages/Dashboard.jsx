@@ -14,7 +14,9 @@ import {
   PackageCheck,
   UserCheck,
   LayoutGrid,
-  ArrowRight
+  ArrowRight,
+  ShoppingCart,
+  FileText
 } from 'lucide-react'
 
 export const Dashboard = () => {
@@ -235,6 +237,57 @@ export const Dashboard = () => {
           </>
         )}
 
+      </div>
+
+      {/* Accesos Rápidos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+        <div 
+          onClick={() => navigate('/ventas')}
+          className="bg-gradient-to-br from-brand-50 to-white hover:from-brand-100/50 hover:to-slate-50 border border-brand-100 hover:border-brand-200 p-5 rounded-2xl shadow-sm cursor-pointer active:scale-95 transition-all flex items-center justify-between group"
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-md shadow-brand-200/50">
+              <ShoppingCart className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 text-sm group-hover:text-brand-700 transition-colors">Punto de Venta (POS)</span>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">Registrar nueva venta</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+        </div>
+
+        <div 
+          onClick={() => navigate('/historial-ventas')}
+          className="bg-gradient-to-br from-slate-50 to-white hover:from-slate-100/50 hover:to-slate-50 border border-slate-200/60 hover:border-slate-300/80 p-5 rounded-2xl shadow-sm cursor-pointer active:scale-95 transition-all flex items-center justify-between group"
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 text-sm group-hover:text-slate-900 transition-colors">Historial de Ventas</span>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">Monitorear y anular facturas</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+        </div>
+
+        <div 
+          onClick={() => navigate('/kardex')}
+          className="bg-gradient-to-br from-slate-50 to-white hover:from-slate-100/50 hover:to-slate-50 border border-slate-200/60 hover:border-slate-300/80 p-5 rounded-2xl shadow-sm cursor-pointer active:scale-95 transition-all flex items-center justify-between group"
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md">
+              <Layers className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 text-sm group-hover:text-amber-700 transition-colors">Kardex de Inventario</span>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">Auditoría y control de stock</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+        </div>
       </div>
 
       {/* Filtro rápido por categorías */}

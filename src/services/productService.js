@@ -106,3 +106,41 @@ export const createBatch = async (batch) => {
   }
   return data
 }
+
+/**
+ * Obtiene el historial de movimientos de inventario (Kardex).
+ */
+export const getStockMovements = async () => {
+  const { data, error } = await supabase
+    .from('stock_movements')
+    .select(`
+      id,
+      quantity,
+      type,
+      reason,
+      description,
+      previous_stock,
+      new_stock,
+      created_at,
+      reference_type,
+      reference_id,
+      product_batches (
+        batch_code,
+        products (
+          name,
+          sku
+        )
+      ),
+      profiles:user_id (
+        email,
+        full_name
+      )
+    `)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error en getStockMovements:', error.message)
+    throw error
+  }
+  return data || []
+}

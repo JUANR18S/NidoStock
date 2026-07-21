@@ -16,60 +16,35 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null)
   const [role, setRole] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [authInitialized, setAuthInitialized] = useState(false)
 
   const fetchProfile = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, role, full_name, active, created_at, updated_at')
+      .eq('id', userId)
+      .maybeSingle()
 
-      if (error) {
-        console.error('Error al obtener perfil:', error.message)
-        setProfile(null)
-        setRole(null)
-      } else {
-        setProfile(data)
-        setRole(data?.role || 'employee')
-      }
-    } catch (err) {
-      console.error('Excepción al obtener perfil:', err)
-      setProfile(null)
-      setRole(null)
-    }
+    if (error) throw error
+    return data
   }
 
   useEffect(() => {
     let active = true
 
-    // Escuchar cambios de estado de autenticación (se dispara inmediatamente con INITIAL_SESSION)
+    // Este callback debe permanecer síncrono. Una consulta a Supabase dentro
+    // de onAuthStateChange puede esperar el mismo bloqueo interno de Auth.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (!active) return
-
-          setLoading(true)
-          if (session?.user) {
-            setUser(session.user)
-            await fetchProfile(session.user.id)
-          } else {
-            setUser(null)
-            setProfile(null)
-            setRole(null)
-          }
-        } catch (err) {
-          console.error('Error en onAuthStateChange callback:', err)
-          if (active) {
-            setUser(null)
-            setProfile(null)
-            setRole(null)
-          }
-        } finally {
-          if (active) {
-            setLoading(false)
-          }
+      (_event, session) => {
+        if (!active) return
+        const nextUser = session?.user ?? null
+        setUser(nextUser)
+        setLoading(Boolean(nextUser))
+        if (!nextUser) {
+          setProfile(null)
+          setRole(null)
         }
+        setAuthInitialized(true)
       }
     )
 
@@ -78,6 +53,42 @@ export const AuthProvider = ({ children }) => {
       subscription?.unsubscribe()
     }
   }, [])
+
+  const userId = user?.id
+
+  useEffect(() => {
+    if (!authInitialized || !userId) return
+
+    let active = true
+
+    const loadProfile = async () => {
+      try {
+        const data = await fetchProfile(userId)
+        if (!active) return
+
+        setProfile(data)
+        setRole(data?.role ?? null)
+
+        if (!data) {
+          console.error('El usuario autenticado no tiene un perfil asociado.')
+        }
+      } catch (err) {
+        console.error('Error al obtener perfil:', err.message)
+        if (active) {
+          setProfile(null)
+          setRole(null)
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadProfile()
+
+    return () => {
+      active = false
+    }
+  }, [authInitialized, userId])
 
   const signIn = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -119,8 +130,9 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading ? children : (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+      {children}
+      {loading && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-50/80 backdrop-blur-[2px]">
           <div className="relative flex items-center justify-center">
             <div className="w-16 h-16 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
             <div className="absolute text-brand-600 font-semibold text-xs uppercase tracking-wider animate-pulse">
